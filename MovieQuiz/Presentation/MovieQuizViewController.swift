@@ -1,13 +1,13 @@
     import UIKit
 
-    final class MovieQuizViewController: UIViewController {
+    final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
 
     // переменная с индексом текущего вопроса,
     private var currentQuestionIndex: Int = 0
     // переменная со счётчиком правильных ответов
     private var correctAnswers: Int = 0
     private let questionsAmount: Int = 10
-    private let questionFactory: QuestionFactoryProtocol = QuestionFactory()
+    private let questionFactory: QuestionFactoryProtocol? = nil
     private var currentQuestion: QuizQuestion?
 
         
@@ -29,12 +29,9 @@
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        var questionFactory = QuestionFactory(delegate: self)
         
-        if let firstQuestion = questionFactory.requestNextQuestion() {
-            currentQuestion = firstQuestion
-            let viewModel = convert(model: firstQuestion)
-            show(quiz: viewModel)
-        }
+        questionFactory.requestNextQuestion()
     }
 
     @IBAction private func yesButtonClicked(_ sender: Any) {
@@ -100,13 +97,24 @@
             show(quiz: viewModel)
         } else {
             currentQuestionIndex += 1
-            if let nextQuestion = questionFactory.requestNextQuestion() {
-                currentQuestion = nextQuestion
-                let viewModel = convert(model: nextQuestion)
-                show(quiz: viewModel)
-            }
+            
+            questionFactory?.requestNextQuestion()
         }
     }
+        
+        // MARK: - QuestionFactoryDelegate
+
+        func didReceiveNextQuestion(question: QuizQuestion?) {
+            guard let question = question else {
+                return
+            }
+            
+            currentQuestion = question
+            let viewModel = convert(model: question)
+            DispatchQueue.main.async { [weak self] in
+                self?.show(quiz: viewModel)
+            }
+        }
         
     // метод конвертации, который принимает моковый вопрос и возвращает вью модель для экрана вопроса
     private func convert(model: QuizQuestion) -> QuizStepViewModel {
@@ -131,12 +139,7 @@
             self.currentQuestionIndex = 0
             self.correctAnswers = 0
             
-            if let firstQuestion = self.questionFactory.requestNextQuestion() {
-                self.currentQuestion = firstQuestion
-                let viewModel = self.convert(model: firstQuestion)
-                
-                self.show(quiz: viewModel)
-            }
+            self.questionFactory?.requestNextQuestion()
         }
         
         alert.addAction(action)

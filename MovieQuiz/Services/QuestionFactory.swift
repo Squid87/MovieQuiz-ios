@@ -8,8 +8,7 @@ import Foundation
 
 class QuestionFactory: QuestionFactoryProtocol {
     
-    
-    func requestNextQuestion() {
+    func requestNextQuestion(){
         guard let index = (0..<questions.count).randomElement() else {
                 delegate?.didReceiveNextQuestion(question: nil)
                 return
@@ -40,7 +39,7 @@ class QuestionFactory: QuestionFactoryProtocol {
         }
         return questions[safe: index]
     }
-    */
+*/
     init(delegate: QuestionFactoryDelegate) {
         self.delegate = delegate
     }

@@ -2,36 +2,39 @@
 
     final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
 
-    // переменная с индексом текущего вопроса,
-    private var currentQuestionIndex: Int = 0
-    // переменная со счётчиком правильных ответов
-    private var correctAnswers: Int = 0
-    private let questionsAmount: Int = 10
-    private let questionFactory: QuestionFactoryProtocol? = nil
-    private var currentQuestion: QuizQuestion?
+        // переменная с индексом текущего вопроса,
+        private var currentQuestionIndex: Int = 0
+        // переменная со счётчиком правильных ответов
+        private var correctAnswers: Int = 0
+        private let questionsAmount: Int = 10
+        private var questionFactory: QuestionFactoryProtocol?
+        private var currentQuestion: QuizQuestion?
+        private var alertModel: AlertModel?
+        private var alertPresenter: AlertPresenter?
+        
 
         
         
-    //вывод картинки
-    @IBOutlet weak private var imageView: UIImageView!
-    //вывод текста
-    @IBOutlet private weak var textLabel: UILabel!
-    //вывод текущего номера вопроса
-    @IBOutlet private weak var counterLabel: UILabel!
-    
-    //свойства кнопоки да
-    @IBOutlet weak private var yesButtonOutlet: UIButton!
-    //свойства кнопоки нет
-    @IBOutlet weak private var noButtonOutlet: UIButton!
+        //вывод картинки
+        @IBOutlet weak private var imageView: UIImageView!
+        //вывод текста
+        @IBOutlet private weak var textLabel: UILabel!
+        //вывод текущего номера вопроса
+        @IBOutlet private weak var counterLabel: UILabel!
+        
+        //свойства кнопоки да
+        @IBOutlet weak private var yesButtonOutlet: UIButton!
+        //свойства кнопоки нет
+        @IBOutlet weak private var noButtonOutlet: UIButton!
         
         
         
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        var questionFactory = QuestionFactory(delegate: self)
-        
-        questionFactory.requestNextQuestion()
+        questionFactory = QuestionFactory(delegate: self)
+        alertPresenter = AlertPresenter()
+        questionFactory?.requestNextQuestion()
     }
 
     @IBAction private func yesButtonClicked(_ sender: Any) {
@@ -51,7 +54,7 @@
         self.showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
     }
 
-    // приватный метод вывода на экран вопроса, который принимает на вход вью модель вопроса и ничего не возвращает
+    // приватный метод вывода на экран вопроса, который принимает на вход вью модель вопроса
     private func show(quiz step: QuizStepViewModel) {
         textLabel.text = step.question
         imageView.image = step.image
@@ -60,7 +63,7 @@
     }
 
     // приватный метод, который меняет цвет рамки
-    // принимает на вход булевое значение и ничего не возвращает
+    // принимает на вход булевое значение
     private func showAnswerResult(isCorrect: Bool) {
         
         yesButtonOutlet.isEnabled = false
@@ -87,14 +90,18 @@
         imageView.layer.borderColor = UIColor.clear.cgColor //перекрасили рамку в белый
         // идём в состояние "Результат квиза"
         if currentQuestionIndex == questionsAmount - 1 {
-            let text = correctAnswers == questionsAmount ?
-                    "Поздравляем, Вы ответили на 10 из 10!" :
-                    "Вы ответили на \(correctAnswers) из 10, попробуйте ещё раз!"
-            let viewModel = QuizResultsViewModel(
-                title: "Этот раунд окончен!",
-                text: text,
-                buttonText: "Сыграть ещё раз")
-            show(quiz: viewModel)
+            
+            let alert1 = AlertModel(
+                title: "Этот раунд закончен",
+                message: "Вы ответили на \(correctAnswers) из 10, попробуйте ещё раз!",
+                buttonText: "Сыграть ещё раз",
+                completion: {[weak self] in
+                    self?.correctAnswers = 0
+                    self?.currentQuestionIndex = 0
+                    self?.questionFactory?.requestNextQuestion()
+                    })
+            alertPresenter?.showAlert(viewController: self, model: alert1)
+            
         } else {
             currentQuestionIndex += 1
             
@@ -125,27 +132,6 @@
             return questionStep
     }
 
-    // приватный метод для показа результатов раунда квиза
-    // принимает вью модель QuizResultsViewModel и ничего не возвращает
-    private func show(quiz result: QuizResultsViewModel) {
-        let alert = UIAlertController(
-            title: result.title,
-            message: result.text,
-            preferredStyle: .alert)
-        
-        let action = UIAlertAction(title: result.buttonText, style: .default) { [weak self] _ in
-            guard let self = self else {return}
-            
-            self.currentQuestionIndex = 0
-            self.correctAnswers = 0
-            
-            self.questionFactory?.requestNextQuestion()
-        }
-        
-        alert.addAction(action)
-        
-        self.present(alert, animated: true, completion: nil)
-    }
 }
 
 
